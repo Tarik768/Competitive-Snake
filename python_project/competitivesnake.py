@@ -246,13 +246,13 @@ def gameLoop():
                     p1_next_dir = "DOWN"
 
                 # P2 Kontrol
-                if event.key == pygame.K_LEFT and p1_dir != "RIGHT":
+                if event.key == pygame.K_a and p2_dir != "RIGHT":
                     p2_next_dir = "LEFT"
-                elif event.key == pygame.K_RIGHT and p1_dir != "LEFT":
+                elif event.key == pygame.K_d and p2_dir != "LEFT":
                     p2_next_dir = "RIGHT"
-                elif event.key == pygame.K_UP and p1_dir != "DOWN":
+                elif event.key == pygame.K_w and p2_dir != "DOWN":
                     p2_next_dir = "UP"
-                elif event.key == pygame.K_DOWN and p1_dir != "UP":
+                elif event.key == pygame.K_s and p2_dir != "UP":
                     p2_next_dir = "DOWN"
         
         if p1_next_dir == "LEFT":
@@ -264,14 +264,14 @@ def gameLoop():
         elif p1_next_dir == "DOWN":
             y1_change = SNAKE_BLOCK; x1_change = 0; p1_dir = "DOWN"
         
-        if p1_next_dir == "LEFT":
-            x1_change = -SNAKE_BLOCK; y1_change = 0; p1_dir = "LEFT"
-        elif p1_next_dir == "RIGHT":
-            x1_change = SNAKE_BLOCK; y1_change = 0; p1_dir = "RIGHT"
-        elif p1_next_dir == "UP":
-            y1_change = -SNAKE_BLOCK; x1_change = 0; p1_dir = "UP"
-        elif p1_next_dir == "DOWN":
-            y1_change = SNAKE_BLOCK; x1_change = 0; p1_dir = "DOWN"
+        if p2_next_dir == "LEFT":
+            x2_change = -SNAKE_BLOCK; y2_change = 0; p2_dir = "LEFT"
+        elif p2_next_dir == "RIGHT":
+            x2_change = SNAKE_BLOCK; y2_change = 0; p2_dir = "RIGHT"
+        elif p2_next_dir == "UP":
+            y2_change = -SNAKE_BLOCK; x2_change = 0; p2_dir = "UP"
+        elif p2_next_dir == "DOWN":
+            y2_change = SNAKE_BLOCK; x2_change = 0; p2_dir = "DOWN"
         # Hareket
         x1 += x1_change; y1 += y1_change
         x2 += x2_change; y2 += y2_change
@@ -338,5 +338,3 @@ def gameLoop():
 
     pygame.quit()
     quit()
-
-gameLoop()
