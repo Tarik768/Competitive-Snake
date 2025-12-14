@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-import competitivesnake  # Senin kaydettiğin oyun dosyası (aynı klasörde olmalı)
+import competitivesnake # Senin kaydettiğin oyun dosyası (aynı klasörde olmalı)
 
 pygame.init()
 
@@ -44,53 +44,27 @@ def draw_text(text, font, color, surface, x, y):
     textrect.center = (x, y)
     surface.blit(textobj, textrect)
 
+def draw_key_icon(surface, text, x, y, width=60, height=60, color=(50, 50, 70)): # Ekrana klavye tuşu görünümlü kutucuk çizer
+    key_rect = pygame.Rect(x, y, width, height)
+    # Tuşun gövdesi
+    pygame.draw.rect(surface, color, key_rect, border_radius=10)
+    # Tuşun kenarlığı
+    pygame.draw.rect(surface, (150, 150, 150), key_rect, 2, border_radius=10)
+    # Harf
+    draw_text(text, font, WHITE, surface, x + width // 2, y + height // 2)
+
 def main_menu():
     while True:
-        # 1. Arka Plan Çizimi
+        # 1. Arka Plan
         if bg_image:
             screen.blit(bg_image, (0, 0))
         else:
-            screen.fill((20, 20, 40)) # Resim yoksa koyu lacivert yap
+            screen.fill((20, 20, 40))
 
-        # 2. Fare Konumunu Al
         mx, my = pygame.mouse.get_pos()
+        click = False # Click durumunu en başta sıfırla
 
-        # 3. Buton Tanımlama (Ekranın tam ortası)
-        button_width = 300
-        button_height = 80
-        button_x = SCREEN_WIDTH // 2 - button_width // 2
-        button_y = SCREEN_HEIGHT // 2 - button_height // 2
-        
-        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-
-        # 4. Buton Etkileşimi (Hover ve Tıklama)
-        if button_rect.collidepoint((mx, my)):
-            # Fare üzerindeyse daha parlak yeşil yap
-            pygame.draw.rect(screen, GREEN_HOVER, button_rect, border_radius=15)
-            if click:
-                # OYUNU BAŞLAT
-                try:
-                    competitivesnake.gameLoop(screen) # Diğer dosyadaki fonksiyonu çağırıyoruz
-                    # Oyun bitip buraya dönerse ekranı tekrar kendine göre ayarlasın
-                    pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-                except Exception as e:
-                    print(f"Oyun başlatılırken hata: {e}")
-        else:
-            # Fare üzerinde değilse normal yeşil
-            pygame.draw.rect(screen, GREEN_BUTTON, button_rect, border_radius=15)
-
-        # 5. Yazıları Çiz
-        # Buton üzerindeki yazı
-        draw_text('OYUNA BAŞLA', font, WHITE, screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-        
-        # Başlık yazısı (Butonun üstünde)
-        draw_text('COMPETITIVE SNAKE', fontbig, (255, 215, 0), screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150)
-        
-        # Çıkış bilgisi
-        draw_text('Çıkmak için ESC', pygame.font.SysFont("bahnschrift", 20), WHITE, screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50)
-
-        # 6. Olay Döngüsü (Event Loop)
-        click = False
+        # Event Loop (Click yakalamak için yukarı taşıdık)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -103,6 +77,134 @@ def main_menu():
                 if event.button == 1:
                     click = True
 
+        # --- BUTON AYARLARI ---
+        button_width = 350
+        button_height = 70
+        center_x = SCREEN_WIDTH // 2
+        
+        # 1. OYUNA BAŞLA BUTONU (Biraz yukarı aldık)
+        btn1_rect = pygame.Rect(center_x - button_width // 2, SCREEN_HEIGHT // 2 - 60, button_width, button_height)
+        
+        # 2. NASIL OYNANIR BUTONU (Hemen altına)
+        btn2_rect = pygame.Rect(center_x - button_width // 2, SCREEN_HEIGHT // 2 + 40, button_width, button_height)
+
+        # --- BUTON ÇİZİM VE KONTROL ---
+        
+        # Buton 1: Oyuna Başla
+        if btn1_rect.collidepoint((mx, my)):
+            pygame.draw.rect(screen, GREEN_HOVER, btn1_rect, border_radius=15)
+            if click:
+                try:
+                    competitivesnake.gameLoop(screen)
+                    pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+                except Exception as e:
+                    print(f"Oyun hatası: {e}")
+        else:
+            pygame.draw.rect(screen, GREEN_BUTTON, btn1_rect, border_radius=15)
+        
+        # Buton 2: Nasıl Oynanır
+        if btn2_rect.collidepoint((mx, my)):
+            pygame.draw.rect(screen, (0, 150, 200), btn2_rect, border_radius=15) # Buna Mavi ton verdik
+            if click:
+                controls_menu() # Yeni sayfaya git
+        else:
+            pygame.draw.rect(screen, (0, 100, 150), btn2_rect, border_radius=15)
+
+        # --- YAZILAR ---
+        draw_text('OYUNA BAŞLA', font, WHITE, screen, btn1_rect.centerx, btn1_rect.centery)
+        draw_text('KONTROLLER', font, WHITE, screen, btn2_rect.centerx, btn2_rect.centery)
+        
+        # Başlık
+        draw_text('COMPETITIVE SNAKE', fontbig, (255, 215, 0), screen, center_x, SCREEN_HEIGHT // 2 - 180)
+        
+        # Alt Bilgi
+        draw_text('Çıkmak için [ESC]', pygame.font.SysFont("bahnschrift", 20), WHITE, screen, center_x, SCREEN_HEIGHT - 50)
+
+        pygame.display.update()
+
+def controls_menu(): # Kontrollerin gösterildiği ekran
+    while True:
+        # Arkaplan ve karartma
+        if bg_image:
+            screen.blit(bg_image, (0, 0))
+            s = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            s.set_alpha(220) # Biraz daha koyu yaptım okunurluk için
+            s.fill((0,0,0))
+            screen.blit(s, (0,0))
+        else:
+            screen.fill((20, 20, 40))
+
+        mx, my = pygame.mouse.get_pos()
+        center_x = SCREEN_WIDTH // 2
+        center_y = SCREEN_HEIGHT // 2
+        
+        # --- BAŞLIK ---
+        draw_text('KONTROLLER', fontbig, (255, 215, 0), screen, center_x, 80)
+
+        # --- AYRAÇ ÇİZGİSİ ---
+        # Ekranın tam ortasına dikey çizgi (Başlık altından tuşların altına kadar)
+        line_start = (center_x, center_y - 140)
+        line_end = (center_x, center_y + 80)
+        pygame.draw.line(screen, (100, 100, 120), line_start, line_end, 2)
+
+        # --- KONUMLANDIRMA AYARLARI ---
+        # Mesafeyi açmak için 200 yerine 280 kullandık
+        p1_center_x = center_x + 280  
+        p2_center_x = center_x - 280
+
+        # --- OYUNCU 1 (YEŞİL - SAĞ) ---
+        draw_text("YEŞİL YILAN", font, (50, 255, 80), screen, p1_center_x, center_y - 120)
+        
+        # Yön Tuşları (Konumlar p1_center_x'e göre ayarlı)
+        draw_key_icon(screen, "^", p1_center_x - 30, center_y - 60) # UP
+        draw_key_icon(screen, "<", p1_center_x - 100, center_y + 10) # LEFT
+        draw_key_icon(screen, "v", p1_center_x - 30, center_y + 10) # DOWN
+        draw_key_icon(screen, ">", p1_center_x + 40, center_y + 10) # RIGHT
+
+        # --- OYUNCU 2 (KIRMIZI - SOL) ---
+        draw_text("KIRMIZI YILAN", font, (255, 50, 50), screen, p2_center_x, center_y - 120)
+        
+        # WASD Tuşları (Konumlar p2_center_x'e göre ayarlı)
+        draw_key_icon(screen, "W", p2_center_x - 30, center_y - 60)
+        draw_key_icon(screen, "A", p2_center_x - 100, center_y + 10)
+        draw_key_icon(screen, "S", p2_center_x - 30, center_y + 10)
+        draw_key_icon(screen, "D", p2_center_x + 40, center_y + 10)
+
+        # --- GENEL BİLGİLER ---
+        info_y = center_y + 150
+        draw_text("GENEL", font, WHITE, screen, center_x, info_y)
+        draw_text("[ P ] - Oyunu Duraklat", pygame.font.SysFont("bahnschrift", 25), WHITE, screen, center_x, info_y + 40)
+        draw_text("[ ESC ] - Çıkış / Geri", pygame.font.SysFont("bahnschrift", 25), WHITE, screen, center_x, info_y + 70)
+
+        # --- GERİ BUTONU (ALT ORTA) ---
+        btn_width = 200
+        btn_height = 60
+        # Ekranın en altından 100 piksel yukarıda, ortalanmış
+        back_btn_rect = pygame.Rect(center_x - btn_width // 2, SCREEN_HEIGHT - 100, btn_width, btn_height)
+
+        if back_btn_rect.collidepoint((mx, my)):
+            pygame.draw.rect(screen, GREEN_HOVER, back_btn_rect, border_radius=15)
+            if click:
+                return # Ana menüye dön
+        else:
+            pygame.draw.rect(screen, GREEN_BUTTON, back_btn_rect, border_radius=15)
+        
+        # Buton yazısını ortala
+        draw_text("GERİ", font, WHITE, screen, back_btn_rect.centerx, back_btn_rect.centery)
+
+        # Event Loop
+        click = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+        
         pygame.display.update()
 
 # Menüyü başlat
