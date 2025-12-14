@@ -25,32 +25,28 @@ font_ui = None
 font_big = None
 font_icon = None
 
-def init_ui(screen, width, height):
-    """
-    Ana dosyadan ekranı ve boyutları alır, fontları hazırlar.
-    """
-    global dis, SCREEN_WIDTH, SCREEN_HEIGHT, font_ui, font_big, font_icon
+def init_ui(screen, width, height): # Ana dosyadan ekranı ve boyutları alır, fontları hazırlar.
+    global dis, SCREEN_WIDTH, SCREEN_HEIGHT, font_ui, font_big, font_icon, font_countdown
     
-    # Eğer pygame.font init edilmediyse et (Garanti olsun)
     if not pygame.font.get_init():
         pygame.font.init()
 
     dis = screen
     SCREEN_WIDTH = width
     SCREEN_HEIGHT = height
-    
-    # Fontları oluştur
+
     font_ui = pygame.font.SysFont("bahnschrift", 25)
     font_big = pygame.font.SysFont("bahnschrift", 80)
     font_icon = pygame.font.SysFont("consolas", 20, bold=True)
+    font_countdown = pygame.font.SysFont("bahnschrift", 400, bold=True)
 
-def draw_grid():
+def draw_grid(): # KARELER
     for x in range(0, SCREEN_WIDTH, SNAKE_BLOCK):
         pygame.draw.line(dis, GRID_COLOR, (x, 0), (x, SCREEN_HEIGHT))
     for y in range(0, SCREEN_HEIGHT, SNAKE_BLOCK):
         pygame.draw.line(dis, GRID_COLOR, (0, y), (SCREEN_WIDTH, y))
 
-def draw_apple(x, y):
+def draw_apple(x, y): # ELMA
     center_x = x + SNAKE_BLOCK // 2
     center_y = y + SNAKE_BLOCK // 2
     radius = SNAKE_BLOCK // 2 - 2
@@ -60,7 +56,7 @@ def draw_apple(x, y):
     leaf_end = (center_x + 6, center_y - radius - 6)
     pygame.draw.line(dis, LEAF_COLOR, leaf_start, leaf_end, 3)
 
-def draw_shield_item(x, y):
+def draw_shield_item(x, y): # KALKAN
     center_x = x + SNAKE_BLOCK // 2
     center_y = y + SNAKE_BLOCK // 2
     radius = SNAKE_BLOCK // 2 - 2
@@ -72,7 +68,7 @@ def draw_shield_item(x, y):
     text_rect = text.get_rect(center=(center_x, center_y))
     dis.blit(text, text_rect)
 
-def draw_snake_with_eyes(snake_list, color, direction, has_shield=False):
+def draw_snake_with_eyes(snake_list, color, direction, has_shield=False): # YILANLAR
     for index, x in enumerate(snake_list):
         if has_shield:
             pygame.draw.rect(dis, SHIELD_GLOW, [x[0]-2, x[1]-2, SNAKE_BLOCK+4, SNAKE_BLOCK+4], 2)
@@ -105,20 +101,25 @@ def draw_snake_with_eyes(snake_list, color, direction, has_shield=False):
         pygame.draw.circle(dis, BLACK, e1, 2)
         pygame.draw.circle(dis, BLACK, e2, 2)
 
-def show_hud(p1_score, p2_score, remaining_time, current_speed, p1_shield, p2_shield):
+def show_hud(p1_score, p2_score, remaining_time, current_speed, p1_shield, p2_shield): # HUD
+    # Üst bar arkaplanı
     pygame.draw.rect(dis, (20, 20, 30), [0, 0, SCREEN_WIDTH, 50])
     pygame.draw.line(dis, WHITE, (0, 50), (SCREEN_WIDTH, 50), 2)
 
-    p1_info = f"YESIL: {p1_score}" + (" [KALKAN]" if p1_shield else "")
-    p1_color = SHIELD_GLOW if p1_shield else GREEN
-    p1_text = font_ui.render(p1_info, True, p1_color)
-    dis.blit(p1_text, (50, 15))
-
-    p2_info = (" [KALKAN] " if p2_shield else "") + f"KIRMIZI: {p2_score}"
+    # --- SOL TARAFTA KIRMIZI BİLGİLERİ ---
+    p2_info = f"KIRMIZI: {p2_score}" + (" [KALKAN]" if p2_shield else "")
     p2_color = SHIELD_GLOW if p2_shield else RED
     p2_text = font_ui.render(p2_info, True, p2_color)
-    dis.blit(p2_text, (SCREEN_WIDTH - 300, 15))
+    dis.blit(p2_text, (50, 15)) # Sol tarafa çiz
 
+    # --- SAĞ TARAFTA YEŞİL BİLGİLERİ ---
+    p1_info = (" [KALKAN] " if p1_shield else "") + f"YEŞİL: {p1_score}"
+    p1_color = SHIELD_GLOW if p1_shield else GREEN
+    p1_text = font_ui.render(p1_info, True, p1_color)
+    # Sağ tarafa hizalamak için metin genişliğini hesaba katalım ya da sabit koordinat
+    dis.blit(p1_text, (SCREEN_WIDTH - 350, 15)) # Sağ tarafa çiz
+
+    # --- ORTA KISIM (SÜRE VE HIZ) ---
     color_time = WHITE
     if remaining_time <= 10: color_time = RED
     mins, secs = divmod(int(remaining_time), 60)
@@ -129,7 +130,7 @@ def show_hud(p1_score, p2_score, remaining_time, current_speed, p1_shield, p2_sh
     text_rect = time_text.get_rect(center=(SCREEN_WIDTH/2, 25))
     dis.blit(time_text, text_rect)
 
-def draw_pause_screen():
+def draw_pause_screen(): # DURAKLATMA EKRANI
     box_width, box_height = 600, 200
     box_x = (SCREEN_WIDTH - box_width) // 2
     box_y = (SCREEN_HEIGHT - box_height) // 2
@@ -141,36 +142,58 @@ def draw_pause_screen():
     title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20))
     dis.blit(title, title_rect)
 
-    info = font_ui.render("Devam etmek için [P] - Çıkış için [ESC]", True, WHITE)
+    info = font_ui.render("Devam [C] - Yeniden Başla [R] - Çıkış [ESC]", True, WHITE)
     info_rect = info.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
     dis.blit(info, info_rect)
 
-def winner_screen(winner_name, winner_color, score, game_loop_callback):
-    """
-    Oyun bitti ekranı.
-    Not: game_loop_callback parametresi restart atılması gerekirse diye alındı 
-    ama burada basit string dönüşüyle halledeceğiz.
-    """
+def draw_huge_countdown(seconds): # SON 10 SANİYE SAYACI
+    if seconds <= 0: return
+    display_str = str(int(seconds))
+    text = font_countdown.render(display_str, True, (255, 0, 0))
+    text.set_alpha(40) # Şeffaflık ayarı (0-255 arası)
+    
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+    dis.blit(text, text_rect)
+
+def winner_screen(winner_name, winner_color, p1_score, p2_score, game_loop_callback): # OYUN SONU EKRANI
     waiting = True
     while waiting:
         dis.fill(BG_COLOR)
         
-        title = font_big.render("KAZANAN", True, WHITE)
-        title_rect = title.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 100))
+        # --- BAŞLIK ---
+        if winner_name == "BERABERE":
+            header_text = "OYUN BİTTİ"
+        else:
+            header_text = "KAZANAN"
+            
+        title = font_big.render(header_text, True, WHITE)
+        title_rect = title.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 120))
         dis.blit(title, title_rect)
         
+        # Kazanan İsmi
         name = font_big.render(winner_name, True, winner_color)
-        name_rect = name.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
-        
-        score_txt = font_ui.render(f"Toplam Uzunluk: {score}", True, GOLD)
-        score_rect = score_txt.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 80))
-
+        name_rect = name.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 20))
         pygame.draw.rect(dis, winner_color, name_rect.inflate(40, 20), 3)
-
         dis.blit(name, name_rect)
-        dis.blit(score_txt, score_rect)
 
-        info = font_ui.render("Tekrar Oynamak için [C] - Menü/Çıkış için [ESC]", True, WHITE)
+        # --- SKOR TABLOSU ---
+        
+        # SOL TARAFTA KIRMIZI SKORU
+        p2_text = font_ui.render(f"KIRMIZI: {p2_score}", True, RED)
+        p2_rect = p2_text.get_rect(center=(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 + 80))
+        
+        # SAĞ TARAFTA YEŞİL SKORU
+        p1_text = font_ui.render(f"YEŞİL: {p1_score}", True, GREEN)
+        p1_rect = p1_text.get_rect(center=(SCREEN_WIDTH/2 + 150, SCREEN_HEIGHT/2 + 80))
+
+        # Araya ayraç çizgisi
+        pygame.draw.line(dis, (60, 60, 80), (SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 65), (SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 95), 2)
+
+        dis.blit(p2_text, p2_rect) # Kırmızı Sola
+        dis.blit(p1_text, p1_rect) # Yeşil Sağa
+        # --------------------
+
+        info = font_ui.render("Tekrar oynamak için [R] - Menüye dönmek için [ESC]", True, WHITE)
         info_rect = info.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT - 100))
         dis.blit(info, info_rect)
 
@@ -182,7 +205,7 @@ def winner_screen(winner_name, winner_color, score, game_loop_callback):
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return "MENU"
-                if event.key == pygame.K_c:
+                    return "MENU"       # Menüye dön
+                if event.key == pygame.K_r:
                     waiting = False
-                    return "RESTART"
+                    return "RESTART"    # Yeniden başla
