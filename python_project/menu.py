@@ -69,7 +69,7 @@ def main_menu():
             if click:
                 # OYUNU BAŞLAT
                 try:
-                    competitivesnake.gameLoop() # Diğer dosyadaki fonksiyonu çağırıyoruz
+                    competitivesnake.gameLoop(screen) # Diğer dosyadaki fonksiyonu çağırıyoruz
                     # Oyun bitip buraya dönerse ekranı tekrar kendine göre ayarlasın
                     pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
                 except Exception as e:
