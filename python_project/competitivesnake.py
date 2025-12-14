@@ -18,20 +18,19 @@ else:
     dis = pygame.display.get_surface()
 
 # --- OYUN AYARLARI ---
-# Renkleri ve boyutları UI'dan alacağız, ama hız ayarları burada kalabilir
 START_SPEED = 10
-GAME_DURATION = 120
+GAME_DURATION = 360
 SPEED_INCREASE_INTERVAL = 5
-SHIELD_DURATION = 5000 
+SHIELD_DURATION = 5000
 
 clock = pygame.time.Clock()
 
-def create_random_item(snake1, snake2, other_items):
-    """Yem veya Kalkan için koordinat üretir"""
-    # UI'daki SNAKE_BLOCK değerini kullanıyoruz
+def create_random_item(snake1, snake2, other_items): # Yem veya Kalkan için koordinat üretir
     block = UI.SNAKE_BLOCK
+    max_attempts = 100  # En fazla 100 kere yer arasın
+    attempts = 0
     
-    while True:
+    while attempts < max_attempts:
         rand_x = random.randrange(0, DIS_WIDTH - block)
         rand_y = random.randrange(50, DIS_HEIGHT - block)
         
@@ -46,6 +45,10 @@ def create_random_item(snake1, snake2, other_items):
             [fx, fy] not in snake2_coords and 
             [fx, fy] not in other_item_coords):
             return [fx, fy]
+        
+        attempts += 1
+    
+    return None # Yer bulamazsa None döndür
 
 def handle_cut_robust(victim_list, hit_point_x, hit_point_y, food_list):
     """Hassas çarpışma kontrolü ve kesme işlemi"""
@@ -69,13 +72,12 @@ def handle_cut_robust(victim_list, hit_point_x, hit_point_y, food_list):
 
 def gameLoop(screen):
     # --- UI BAŞLATMA ---
-    # Ekranı ve boyutları UI modülüne tanıtıyoruz
     UI.init_ui(screen, DIS_WIDTH, DIS_HEIGHT)
     
     game_over = False
     start_ticks = pygame.time.get_ticks()
     
-    block = UI.SNAKE_BLOCK # Kısaltma olsun diye
+    block = UI.SNAKE_BLOCK 
 
     # --- BAŞLANGIÇ KONUMLARI ---
     start_x1 = round((DIS_WIDTH / 4 * 3) / block) * block
@@ -109,75 +111,88 @@ def gameLoop(screen):
     paused = False
     pause_start_time = 0
 
-    # Başlangıç Yemleri
     for _ in range(2):
-        foods.append(create_random_item(snake1_list, snake2_list, shields))
+        new_food = create_random_item(snake1_list, snake2_list, shields + foods)
+        if new_food:
+            foods.append(new_food)
 
     while not game_over:
         current_time = pygame.time.get_ticks()
-        seconds_passed = (current_time - start_ticks) / 1000
-        remaining_time = GAME_DURATION - seconds_passed
-        current_speed = START_SPEED + (int(seconds_passed) // SPEED_INCREASE_INTERVAL)
+        
+        # Süreyi hesaplarken pause süresini hesaba katmak için:
+        # Eğer pause durumundaysak zamanı dondurmuş gibi davranıyoruz.
+        # Ancak basitlik için burayı ellemiyoruz, sadece 'continue' ekleyeceğiz.
+        
+        if not paused:
+            seconds_passed = (current_time - start_ticks) / 1000
+            remaining_time = GAME_DURATION - seconds_passed
+            current_speed = START_SPEED + (int(seconds_passed) // SPEED_INCREASE_INTERVAL)
 
-        # --- OYUN SONU KONTROLÜ ---
-        if remaining_time <= 0:
-            # Kazananı belirle ve UI'daki fonksiyonu çağır
-            if length_of_snake1 > length_of_snake2:
-                result = UI.winner_screen("YESIL YILAN", UI.GREEN, length_of_snake1, gameLoop)
-            elif length_of_snake2 > length_of_snake1:
-                result = UI.winner_screen("KIRMIZI YILAN", UI.RED, length_of_snake2, gameLoop)
-            else:
-                result = UI.winner_screen("BERABERE!", UI.WHITE, length_of_snake1, gameLoop)
-            
-            if result == "MENU": return
-            if result == "RESTART": 
-                gameLoop(screen) # Recursive restart
-                return
+            # --- OYUN SONU KONTROLÜ ---
+            if remaining_time <= 0:
+                if length_of_snake1 > length_of_snake2:
+                    result = UI.winner_screen("YESIL YILAN", UI.GREEN, length_of_snake1, length_of_snake2, gameLoop)
+                elif length_of_snake2 > length_of_snake1:
+                    result = UI.winner_screen("KIRMIZI YILAN", UI.RED, length_of_snake1, length_of_snake2, gameLoop)
+                else:
+                    result = UI.winner_screen("BERABERE!", UI.WHITE, length_of_snake1, length_of_snake2, gameLoop)
+                
+                if result == "MENU": return
+                if result == "RESTART": 
+                    gameLoop(screen)
+                    return
 
         # --- EVENT HANDLING ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
                 return 
+            
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
-                    paused = not paused 
-                    if paused:
-                        pause_start_time = pygame.time.get_ticks()
-                    else:
-                        pause_duration = pygame.time.get_ticks() - pause_start_time
-                        start_ticks += pause_duration
-                
                 if event.key == pygame.K_ESCAPE:
                     game_over = True
                     return 
                 
-                # P1 Kontroller
-                if event.key == pygame.K_LEFT and p1_dir != "RIGHT": p1_next_dir = "LEFT"
-                elif event.key == pygame.K_RIGHT and p1_dir != "LEFT": p1_next_dir = "RIGHT"
-                elif event.key == pygame.K_UP and p1_dir != "DOWN": p1_next_dir = "UP"
-                elif event.key == pygame.K_DOWN and p1_dir != "UP": p1_next_dir = "DOWN"
-                
-                # P2 Kontroller
-                if event.key == pygame.K_a and p2_dir != "RIGHT": p2_next_dir = "LEFT"
-                elif event.key == pygame.K_d and p2_dir != "LEFT": p2_next_dir = "RIGHT"
-                elif event.key == pygame.K_w and p2_dir != "DOWN": p2_next_dir = "UP"
-                elif event.key == pygame.K_s and p2_dir != "UP": p2_next_dir = "DOWN"
+                if not paused:
+                    if event.key == pygame.K_p: # DURAKLAT
+                        paused = True
+                        pause_start_time = pygame.time.get_ticks()
+                    
+                    # Kontroller
+                    if event.key == pygame.K_LEFT and p1_dir != "RIGHT": p1_next_dir = "LEFT"
+                    elif event.key == pygame.K_RIGHT and p1_dir != "LEFT": p1_next_dir = "RIGHT"
+                    elif event.key == pygame.K_UP and p1_dir != "DOWN": p1_next_dir = "UP"
+                    elif event.key == pygame.K_DOWN and p1_dir != "UP": p1_next_dir = "DOWN"
+                    
+                    if event.key == pygame.K_a and p2_dir != "RIGHT": p2_next_dir = "LEFT"
+                    elif event.key == pygame.K_d and p2_dir != "LEFT": p2_next_dir = "RIGHT"
+                    elif event.key == pygame.K_w and p2_dir != "DOWN": p2_next_dir = "UP"
+                    elif event.key == pygame.K_s and p2_dir != "UP": p2_next_dir = "DOWN"
 
+                else: # PAUSE DURUMUNDA TUŞLAR
+                    if event.key == pygame.K_c: # DEVAM ET
+                        paused = False
+                        pause_duration = pygame.time.get_ticks() - pause_start_time
+                        start_ticks += pause_duration
+                    
+                    elif event.key == pygame.K_r: # YENİDEN BAŞLAT
+                        gameLoop(screen)
+                        return
+        
         if paused:
             UI.draw_pause_screen()
-            pygame.display.update() 
-            clock.tick(15) 
-            continue
-            
+            pygame.display.update()
+            clock.tick(15) # İşlemciyi yormamak için FPS düşür
+            continue # Döngünün başına dön, HAREKET KODLARINI ÇALIŞTIRMA
+        
         # --- HAREKET ---
-        # P1
+        # P1 (Yeşil)
         if p1_next_dir == "LEFT": x1_change = -block; y1_change = 0; p1_dir = "LEFT"
         elif p1_next_dir == "RIGHT": x1_change = block; y1_change = 0; p1_dir = "RIGHT"
         elif p1_next_dir == "UP": y1_change = -block; x1_change = 0; p1_dir = "UP"
         elif p1_next_dir == "DOWN": y1_change = block; x1_change = 0; p1_dir = "DOWN"
         
-        # P2
+        # P2 (Kırmızı)
         if p2_next_dir == "LEFT": x2_change = -block; y2_change = 0; p2_dir = "LEFT"
         elif p2_next_dir == "RIGHT": x2_change = block; y2_change = 0; p2_dir = "RIGHT"
         elif p2_next_dir == "UP": y2_change = -block; x2_change = 0; p2_dir = "UP"
@@ -186,7 +201,7 @@ def gameLoop(screen):
         x1 += x1_change; y1 += y1_change
         x2 += x2_change; y2 += y2_change
 
-        # --- DUVAR WRAP ---
+        # Duvarın İçinden Geçme
         if x1 >= DIS_WIDTH: x1 = 0
         elif x1 < 0: x1 = (DIS_WIDTH // block) * block - block
         if y1 >= DIS_HEIGHT: y1 = 50 
@@ -197,13 +212,15 @@ def gameLoop(screen):
         if y2 >= DIS_HEIGHT: y2 = 50
         elif y2 < 50: y2 = (DIS_HEIGHT // block) * block - block
 
-        # --- ÇİZİM İŞLEMLERİ (UI Modülü Üzerinden) ---
+        # UI Modülü Üzerinden Çizim İşlemleri
         screen.fill(UI.BG_COLOR)
         UI.draw_grid()
 
         # Kalkan Spawn
         if len(shields) == 0 and random.randint(0, 200) == 0:
-            shields.append(create_random_item(snake1_list, snake2_list, foods))
+            new_shield = create_random_item(snake1_list, snake2_list, foods)
+            if new_shield:
+                shields.append(new_shield)
 
         # Eşyaları Çiz
         for food in foods:
@@ -233,15 +250,13 @@ def gameLoop(screen):
         if not p1_has_shield:
             snake1_list, length_of_snake1 = handle_cut_robust(snake1_list, x2, y2, foods)
         
-        # Kendi kuyruğunu kesme
         snake1_list, length_of_snake1 = handle_cut_robust(snake1_list, x1, y1, foods)
         snake2_list, length_of_snake2 = handle_cut_robust(snake2_list, x2, y2, foods)
 
-        # Yılanları Çiz
+        # Çizimler
         UI.draw_snake_with_eyes(snake1_list, UI.GREEN, p1_dir, p1_has_shield)
         UI.draw_snake_with_eyes(snake2_list, UI.RED, p2_dir, p2_has_shield)
 
-        # HUD Çiz
         UI.show_hud(length_of_snake1, length_of_snake2, remaining_time, current_speed, p1_has_shield, p2_has_shield)
         
         # Yem Yeme
@@ -249,11 +264,14 @@ def gameLoop(screen):
             if abs(x1 - food[0]) < 15 and abs(y1 - food[1]) < 15:
                 length_of_snake1 += 1
                 foods.remove(food)
-                foods.append(create_random_item(snake1_list, snake2_list, shields))
+                new_item = create_random_item(snake1_list, snake2_list, shields + foods)
+                if new_item: foods.append(new_item)
+
             elif abs(x2 - food[0]) < 15 and abs(y2 - food[1]) < 15:
                 length_of_snake2 += 1
                 foods.remove(food)
-                foods.append(create_random_item(snake1_list, snake2_list, shields))
+                new_item = create_random_item(snake1_list, snake2_list, shields + foods)
+                if new_item: foods.append(new_item)
 
         # Kalkan Alma
         for shield in shields[:]:
@@ -267,7 +285,12 @@ def gameLoop(screen):
                 shields.remove(shield)
 
         if len(foods) < 2:
-             foods.append(create_random_item(snake1_list, snake2_list, shields))
+            new_item = create_random_item(snake1_list, snake2_list, shields + foods)
+            if new_item:
+                foods.append(new_item)
+
+        if remaining_time <= 11: # Son 10 saniye uyarı
+            UI.draw_huge_countdown(remaining_time)
 
         pygame.display.update()
         clock.tick(current_speed)
