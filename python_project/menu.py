@@ -21,6 +21,7 @@ TEXT_COLOR = (240, 240, 240)
 
 # --- FONT ---
 font = pygame.font.SysFont("bahnschrift", 50)
+fontbig = pygame.font.SysFont("arial", 80, bold=True)
 
 # --- ARKA PLAN RESMİ AYARI ---
 # Buraya resminin adını yaz (Örn: "background.jpg"). 
@@ -83,7 +84,7 @@ def main_menu():
         draw_text('OYUNA BAŞLA', font, WHITE, screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         
         # Başlık yazısı (Butonun üstünde)
-        draw_text('COMPETITIVE SNAKE', font, (255, 215, 0), screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150)
+        draw_text('COMPETITIVE SNAKE', fontbig, (255, 215, 0), screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 150)
         
         # Çıkış bilgisi
         draw_text('Çıkmak için ESC', pygame.font.SysFont("bahnschrift", 20), WHITE, screen, SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50)
