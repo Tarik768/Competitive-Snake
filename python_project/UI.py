@@ -157,8 +157,12 @@ def draw_huge_countdown(seconds): # SON 10 SANİYE SAYACI
 
 def winner_screen(winner_name, winner_color, p1_score, p2_score, game_loop_callback): # OYUN SONU EKRANI
     waiting = True
+    
+    # Gerçek pencere objesini al (Ölçekleme için lazım)
+    real_screen = pygame.display.get_surface()
+    
     while waiting:
-        dis.fill(BG_COLOR)
+        dis.fill(BG_COLOR) # Sanal yüzeyi temizle
         
         # --- BAŞLIK ---
         if winner_name == "BERABERE":
@@ -197,6 +201,12 @@ def winner_screen(winner_name, winner_color, p1_score, p2_score, game_loop_callb
         info_rect = info.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT - 100))
         dis.blit(info, info_rect)
 
+        # --- KRİTİK EKLEME: EKRANA BASMA ---
+        # Sanal yüzeyi (dis), gerçek pencere boyutuna (real_screen) uydur
+        if real_screen: 
+            scaled_surface = pygame.transform.smoothscale(dis, real_screen.get_size())
+            real_screen.blit(scaled_surface, (0, 0))
+        
         pygame.display.update()
 
         for event in pygame.event.get():
