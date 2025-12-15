@@ -287,3 +287,117 @@ def gameLoop(screen):
         clock.tick(current_speed)
 
     return
+
+
+# --- ONLINE OYUN İÇİN GEREKLİ SINIF VE FONKSİYONLAR ---
+
+# Pickle modülünün sunucudan gelen veriyi tanıması için 
+# Game sınıfının yapısı burada da tanımlı olmalı.
+class Game:
+    def __init__(self, room_id):
+        self.id = room_id
+        self.ready = False
+        self.snake1 = []
+        self.snake2 = []
+        self.foods = []
+        self.score = [0, 0]
+        self.p1_dir = "RIGHT"
+        self.p2_dir = "LEFT"
+        self.winner = None
+
+def online_game_loop(screen, network):
+    # --- SANAL ÇÖZÜNÜRLÜK AYARLARI ---
+    LOGICAL_WIDTH = 1920
+    LOGICAL_HEIGHT = 1080
+    virtual_surface = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
+    
+    # UI'ı sanal boyutlarla başlat
+    UI.init_ui(virtual_surface, LOGICAL_WIDTH, LOGICAL_HEIGHT)
+    
+    clock = pygame.time.Clock()
+    running = True
+    
+    # Oyuncunun ID'si (0: Host/Yeşil, 1: Client/Kırmızı)
+    p_id = network.p
+
+    print(f"Oyuna Başlandı! Oyuncu ID: {p_id}")
+
+    while running:
+        # --- 1. GİRİŞ KONTROLÜ (INPUT) ---
+        key_pressed = None
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                
+                # Hem OK TUŞLARI hem WASD çalışsın
+                # Çünkü online oynuyoruz, herkes kendi klavyesinde rahat etsin.
+                if event.key in [pygame.K_LEFT, pygame.K_a]:
+                    key_pressed = "LEFT"
+                elif event.key in [pygame.K_RIGHT, pygame.K_d]:
+                    key_pressed = "RIGHT"
+                elif event.key in [pygame.K_UP, pygame.K_w]:
+                    key_pressed = "UP"
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    key_pressed = "DOWN"
+
+        # --- 2. NETWORK İLETİŞİMİ ---
+        # Eğer bir tuşa basıldıysa onu yolla, basılmadıysa "get" yolla (sadece veri al)
+        data_to_send = key_pressed if key_pressed is not None else "get"
+        
+        try:
+            # Sunucuya gönder ve cevabı (Game Objesi) al
+            game = network.send(data_to_send)
+        except Exception as e:
+            print(f"Bağlantı Hatası: {e}")
+            break
+
+        # Sunucudan veri gelmediyse çık
+        if game is None:
+            print("Sunucudan veri alınamadı.")
+            break
+
+        # --- 3. ÇİZİM İŞLEMLERİ (RENDER) ---
+        virtual_surface.fill(UI.BG_COLOR)
+        UI.draw_grid()
+
+        # Yemleri Çiz
+        for food in game.foods:
+            UI.draw_apple(food[0], food[1])
+            
+        # (Şimdilik kalkanları server'a eklemedik, eklenince buraya da eklenir)
+
+        # Yılanları Çiz
+        # game.snake1 ve game.snake2 sunucudan gelen koordinat listeleridir
+        UI.draw_snake_with_eyes(game.snake1, UI.GREEN, game.p1_dir, False) # Shield şimdilik False
+        UI.draw_snake_with_eyes(game.snake2, UI.RED, game.p2_dir, False)
+
+        # HUD (Skor Tablosu)
+        # Süre sunucuda tutulmalı ama şimdilik statik gönderiyoruz, server geliştirilince düzelir.
+        UI.show_hud(game.score[0], game.score[1], 180, 10, False, False)
+
+        # Oyun Bekleniyor Mesajı (Diğer oyuncu gelmediyse)
+        if not game.ready:
+            UI.draw_text("Rakip Bekleniyor...", UI.font_big, UI.WHITE, virtual_surface, LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2)
+
+        # --- 4. OYUN SONU KONTROLÜ ---
+        if game.winner is not None:
+            # Kazanan varsa UI modülündeki ekranı göster
+            winner_text = "YEŞİL KAZANDI" if game.winner == 0 else "KIRMIZI KAZANDI"
+            color = UI.GREEN if game.winner == 0 else UI.RED
+            
+            # Not: Online modda 'Tekrar Oyna' mantığı biraz daha karışıktır.
+            # Şimdilik menüye döndürelim.
+            UI.winner_screen(winner_text, color, game.score[0], game.score[1], None)
+            running = False # Döngüden çık, menüye dön
+
+        # --- 5. EKRANA BASMA (SCALE) ---
+        scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
+        screen.blit(scaled_surface, (0, 0))
+        pygame.display.update()
+
+        clock.tick(60) # İstemci 60 FPS çizebilir, sunucu arkada 30 FPS hesaplar.

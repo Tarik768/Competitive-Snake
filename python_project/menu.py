@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 import competitivesnake # Oyun dosyası
+from network import Network
 
 pygame.init()
 
@@ -101,6 +102,7 @@ def draw_key_icon(surface, text, x, y, width=60, height=60, color=(50, 50, 70)):
     pygame.draw.rect(surface, (150, 150, 150), key_rect, 2, border_radius=10)
     draw_text(text, font, WHITE, surface, x + width // 2, y + height // 2)
 
+
 # --- MENÜ SAYFALARI ---
 
 def main_menu():
@@ -190,18 +192,25 @@ def main_menu():
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
 
+
 def online_menu():
-    user_text = 'Oyuncu 1'
-    input_rect = pygame.Rect(SCREEN_WIDTH // 2 - 100, 180, 200, 50)
+    # --- GİRİŞ KUTUSU DEĞİŞKENLERİ ---
+    user_text = '' # Başlangıçta boş olsun (ID girilecek)
+    input_rect = pygame.Rect(SCREEN_WIDTH // 2 - 100, 200, 200, 50)
     color_input = COLOR_INACTIVE
-    active = False
+    active = False 
     
-    # Cursor
+    # Hata veya Durum Mesajı
+    status_msg = ""
+    status_color = WHITE
+
+    # Cursor (İmleç) Ayarları
     cursor_visible = True
     last_blink_time = pygame.time.get_ticks()
     CURSOR_BLINK_INTERVAL = 500
 
     while True:
+        # 1. Arkaplan Çizimi (Sanal Yüzeye)
         if bg_image:
             virtual_surface.blit(bg_image, (0, 0))
             s = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
@@ -211,15 +220,18 @@ def online_menu():
         else:
             virtual_surface.fill((20, 20, 40))
 
+        # 2. Mouse Pozisyonunu Al (Ölçekli)
         mx, my = get_virtual_mouse_pos()
         click = False
         center_x = SCREEN_WIDTH // 2
         
+        # 3. Zamanlayıcılar
         current_time = pygame.time.get_ticks()
         if current_time - last_blink_time > CURSOR_BLINK_INTERVAL:
             cursor_visible = not cursor_visible
             last_blink_time = current_time
 
+        # 4. Event Loop
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -228,10 +240,12 @@ def online_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     click = True
-                    # Mouse koordinatı artık sanal, collidepoint düzgün çalışır
+                    # Input kutusu tıklama kontrolü
                     if input_rect.collidepoint((mx, my)):
                         active = not active
                         cursor_visible = True
+                        # Kutuya tıklayınca hata mesajını temizle
+                        status_msg = "" 
                     else:
                         active = False
                     color_input = COLOR_ACTIVE if active else COLOR_INACTIVE
@@ -239,62 +253,139 @@ def online_menu():
             if event.type == pygame.KEYDOWN:
                 if active:
                     if event.key == pygame.K_RETURN:
-                        active = False
-                        color_input = COLOR_INACTIVE
+                        # Enter'a basınca Odaya Katılmayı tetikleyebiliriz (Opsiyonel)
+                        pass 
                     elif event.key == pygame.K_BACKSPACE:
                         user_text = user_text[:-1]
                     else:
-                        if len(user_text) < 12:
+                        # Sadece sayı girilmesine izin verelim (Oda ID'si için)
+                        if event.unicode.isnumeric() and len(user_text) < 5:
                             user_text += event.unicode
                 
                 if event.key == pygame.K_ESCAPE:
-                    return
+                    return 
 
-        # Çizimler (virtual_surface üzerine)
+        # --- ARAYÜZ ÇİZİMLERİ ---
+
+        # Başlık
         draw_text('ONLINE LOBİ', fontbig, (255, 215, 0), virtual_surface, center_x, 80)
-        draw_text('İSİM GİRİNİZ:', font, WHITE, virtual_surface, center_x, 150)
         
+        # Durum Mesajı (Hata vs.)
+        if status_msg != "":
+            draw_text(status_msg, font, status_color, virtual_surface, center_x, 140)
+
+        # İsim / ID Girme Alanı Başlığı
+        draw_text('ODA ID (Sadece Katılmak İçin):', font, WHITE, virtual_surface, center_x, 170)
+        
+        # Kutuyu çiz
         pygame.draw.rect(virtual_surface, color_input, input_rect, 2, border_radius=5)
+        
+        # Metni çiz
         text_surface = font.render(user_text, True, WHITE)
+        # Metni kutunun ortasına hizala
         virtual_surface.blit(text_surface, (input_rect.x + 10, input_rect.y + 10))
 
+        # İmleç (Cursor)
         if active and cursor_visible:
             txt_width = text_surface.get_width()
             cursor_x = input_rect.x + 10 + txt_width
             pygame.draw.line(virtual_surface, WHITE, (cursor_x, input_rect.y + 10), (cursor_x, input_rect.y + 40), 2)
 
-        # Butonlar
+        # --- BUTONLAR ---
         btn_width, btn_height = 300, 80
+        
+        # 1. ODA KUR (HOST)
         host_rect = pygame.Rect(center_x - btn_width // 2, 300, btn_width, btn_height)
         
         if host_rect.collidepoint((mx, my)):
             pygame.draw.rect(virtual_surface, (50, 150, 255), host_rect, border_radius=15)
             if click:
-                print(f"HOST: {user_text}")
+                status_msg = "Sunucuya bağlanılıyor..."
+                status_color = WHITE
+                # Ekranı anlık güncelle ki kullanıcı beklediğini görsün
+                scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
+                screen.blit(scaled_surface, (0, 0))
+                pygame.display.update()
+
+                # --- NETWORK BAŞLAT (HOST) ---
+                try:
+                    n = Network("MAKE")
+                    if n.p is not None:
+                        # Bağlantı başarılı! Oyunu başlat
+                        # BURASI HENÜZ YAZILMADI: competitivesnake.online_game_loop(n, screen)
+                        print(f"Oda kuruldu: {n.game_id}")
+                        status_msg = f"Oda ID: {n.game_id} - Bekleniyor..."
+                        status_color = GREEN_HOVER
+                        
+                        # GEÇİCİ OLARAK: Oyuna giriş kodunu buraya bağlayacağız
+                        # Şimdilik hata vermesin diye pass geçiyoruz
+                        competitivesnake.online_game_loop(screen, n)
+                        
+                    else:
+                        status_msg = "Sunucuya bağlanılamadı!"
+                        status_color = (255, 50, 50)
+                except Exception as e:
+                    print(e)
+                    status_msg = "Bağlantı Hatası!"
+                    status_color = (255, 50, 50)
+
         else:
             pygame.draw.rect(virtual_surface, BLUE_BUTTON, host_rect, border_radius=15)
+        
         draw_text("ODA KUR (HOST)", font, WHITE, virtual_surface, host_rect.centerx, host_rect.centery)
 
+        # 2. ODAYA KATIL (JOIN)
         join_rect = pygame.Rect(center_x - btn_width // 2, 400, btn_width, btn_height)
+        
         if join_rect.collidepoint((mx, my)):
             pygame.draw.rect(virtual_surface, (255, 150, 50), join_rect, border_radius=15)
             if click:
-                print(f"JOIN: {user_text}")
+                if len(user_text) < 1:
+                    status_msg = "Lütfen bir Oda ID giriniz!"
+                    status_color = (255, 50, 50)
+                else:
+                    status_msg = f"Odaya giriliyor: {user_text}..."
+                    status_color = WHITE
+                    # Ekranı güncelle
+                    scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
+                    screen.blit(scaled_surface, (0, 0))
+                    pygame.display.update()
+
+                    # --- NETWORK BAŞLAT (JOIN) ---
+                    try:
+                        n = Network("JOIN", room_id=user_text)
+                        if n.p is not None:
+                            print(f"Odaya girildi!")
+                            # GEÇİCİ OLARAK:
+                            competitivesnake.online_game_loop(screen, n)
+                        else:
+                            status_msg = "Oda bulunamadı veya dolu!"
+                            status_color = (255, 50, 50)
+                    except:
+                        status_msg = "Sunucu Hatası!"
+                        status_color = (255, 50, 50)
+
         else:
             pygame.draw.rect(virtual_surface, ORANGE_BUTTON, join_rect, border_radius=15)
+
         draw_text("ODAYA KATIL", font, WHITE, virtual_surface, join_rect.centerx, join_rect.centery)
 
+        # --- GERİ BUTONU ---
         back_rect = pygame.Rect(center_x - 100, SCREEN_HEIGHT - 120, 200, 60)
         if back_rect.collidepoint((mx, my)):
             pygame.draw.rect(virtual_surface, GREEN_HOVER, back_rect, border_radius=15)
-            if click: return
+            if click:
+                return
         else:
             pygame.draw.rect(virtual_surface, GREEN_BUTTON, back_rect, border_radius=15)
+        
         draw_text("GERİ", font, WHITE, virtual_surface, back_rect.centerx, back_rect.centery)
 
+        # --- SONRENDER (Scale & Blit) ---
         scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
+
 
 def settings_menu():
     global IS_FULLSCREEN, CURRENT_RES_INDEX, VOLUME_LEVEL
@@ -399,6 +490,7 @@ def settings_menu():
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
 
+
 def controls_menu():
     while True:
         if bg_image:
@@ -463,6 +555,7 @@ def controls_menu():
         scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
+
 
 if __name__ == "__main__":
     main_menu()
