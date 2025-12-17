@@ -475,9 +475,24 @@ def settings_menu():
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
 
-
 def controls_menu():
     while True:
+        # --- 1. ÖNCE INPUT VE EVENTLERİ ALIYORUZ (SIRALAMA DÜZELTİLDİ) ---
+        mx, my = get_virtual_mouse_pos()
+        click = False
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    click = True
+
+        # --- 2. ÇİZİM İŞLEMLERİ ---
         if bg_image:
             virtual_surface.blit(bg_image, (0, 0))
             s = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
@@ -487,8 +502,6 @@ def controls_menu():
         else:
             virtual_surface.fill((20, 20, 40))
 
-        mx, my = get_virtual_mouse_pos()
-        click = False
         center_x = SCREEN_WIDTH // 2
         center_y = SCREEN_HEIGHT // 2
         
@@ -517,30 +530,25 @@ def controls_menu():
         draw_text("[ P ] - Oyunu Duraklat", pygame.font.SysFont("bahnschrift", 25), WHITE, virtual_surface, center_x, info_y + 40)
         draw_text("[ ESC ] - Çıkış / Geri", pygame.font.SysFont("bahnschrift", 25), WHITE, virtual_surface, center_x, info_y + 70)
 
+        # --- 3. BUTON MANTIĞI (ARTIK 'click' DEĞİŞKENİ DOĞRU ÇALIŞACAK) ---
         back_btn_rect = pygame.Rect(center_x - 100, SCREEN_HEIGHT - 100, 200, 60)
+        
+        # Mouse butonun üzerinde mi?
         if back_btn_rect.collidepoint((mx, my)):
             pygame.draw.rect(virtual_surface, GREEN_HOVER, back_btn_rect, border_radius=15)
-            if click: return
+            # Tıklandı mı? (click değişkeni yukarıdaki event loop'tan geliyor)
+            if click: 
+                return
         else:
             pygame.draw.rect(virtual_surface, GREEN_BUTTON, back_btn_rect, border_radius=15)
+            
         draw_text("GERİ", font, WHITE, virtual_surface, back_btn_rect.centerx, back_btn_rect.centery)
-
-        click = False
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    click = True
         
+        # --- 4. EKRANA BASMA ---
         scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
 
-
+        
 if __name__ == "__main__":
     main_menu()

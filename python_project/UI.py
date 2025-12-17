@@ -100,23 +100,34 @@ def draw_snake_with_eyes(snake_list, color, direction, has_shield=False): # YILA
         pygame.draw.circle(dis, BLACK, e1, 2)
         pygame.draw.circle(dis, BLACK, e2, 2)
 
-def show_hud(p1_score, p2_score, remaining_time, current_speed, p1_shield, p2_shield): # HUD
+def show_hud(p1_score, p2_score, remaining_time, current_speed, p1_shield, p2_shield, current_player_id=None): # <-- YENİ ARGÜMAN EKLENDİ
     # Üst bar arkaplanı
     pygame.draw.rect(dis, (20, 20, 30), [0, 0, SCREEN_WIDTH, 50])
     pygame.draw.line(dis, WHITE, (0, 50), (SCREEN_WIDTH, 50), 2)
 
+    # --- ETİKETLERİ BELİRLE ---
+    p1_label = "YEŞİL"
+    p2_label = "KIRMIZI"
+
+    # Eğer Online moddaysak ve oyuncu ID'si geldiyse "(SEN)" ekle
+    if current_player_id is not None:
+        if current_player_id == 0: p1_label += " (SEN)"
+        elif current_player_id == 1: p2_label += " (SEN)"
+
     # --- SOL TARAFTA KIRMIZI BİLGİLERİ ---
-    p2_info = f"KIRMIZI: {p2_score}" + (" [KALKAN]" if p2_shield else "")
+    p2_info = f"{p2_label}: {p2_score}" + (" [KALKAN]" if p2_shield else "")
     p2_color = SHIELD_GLOW if p2_shield else RED
     p2_text = font_ui.render(p2_info, True, p2_color)
     dis.blit(p2_text, (50, 15)) # Sol tarafa çiz
 
     # --- SAĞ TARAFTA YEŞİL BİLGİLERİ ---
-    p1_info = (" [KALKAN] " if p1_shield else "") + f"YEŞİL: {p1_score}"
+    p1_info = (" [KALKAN] " if p1_shield else "") + f"{p1_label}: {p1_score}"
     p1_color = SHIELD_GLOW if p1_shield else GREEN
     p1_text = font_ui.render(p1_info, True, p1_color)
-    # Sağ tarafa hizalamak için metin genişliğini hesaba katalım ya da sabit koordinat
-    dis.blit(p1_text, (SCREEN_WIDTH - 350, 15)) # Sağ tarafa çiz
+    
+    # Sağ tarafa hizalamak için metin genişliğini alıp çıkarma işlemi
+    text_width = p1_text.get_width()
+    dis.blit(p1_text, (SCREEN_WIDTH - 50 - text_width, 15)) # Sağ tarafa (Kenardan 50px içeride)
 
     # --- ORTA KISIM (SÜRE VE HIZ) ---
     color_time = WHITE

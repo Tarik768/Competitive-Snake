@@ -8,7 +8,7 @@ class Network:
         # --- BURAYA SUNUCU IP ADRESİNİ YAZ ---
         # Localhost test için: "localhost" veya "127.0.0.1"
         # Gerçek sunucu için: "45.xxx.xxx.xxx"
-        self.server = "127.0.0.1" 
+        self.server = "core.kectr.tech" 
         self.port = 5555
         self.addr = (self.server, self.port)
         

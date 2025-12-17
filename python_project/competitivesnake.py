@@ -333,6 +333,36 @@ def online_game_loop(screen, network):
 
         if game is None: break
 
+        if not game.ready:
+            # 1. Arka planı temizle (Siyah veya Lacivert)
+            virtual_surface.fill(UI.BG_COLOR)
+            UI.draw_grid()
+
+            # 2. Yarı saydam siyah bir perde çek
+            overlay = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
+            overlay.set_alpha(200) # 255 tam opak, 0 tam şeffaf
+            overlay.fill((0, 0, 0))
+            virtual_surface.blit(overlay, (0, 0))
+
+            # 3. Bilgileri Yazdır
+            center_x = LOGICAL_WIDTH // 2
+            center_y = LOGICAL_HEIGHT // 2
+
+            # Oda Numarası (Büyük ve Altın Sarısı)
+            UI.draw_text(f"ODA NO: {network.game_id}", UI.font_big, UI.GOLD, virtual_surface, center_x, center_y - 50)
+            
+            # Durum Mesajı (Yanıp sönen efekt yapılabilir ama şimdilik sabit olsun)
+            UI.draw_text("RAKİP BEKLENİYOR...", UI.font_ui, UI.WHITE, virtual_surface, center_x, center_y + 50)
+            
+            UI.draw_text("Arkadaşına Oda Numarasını söyle!", UI.font_icon, (150, 150, 150), virtual_surface, center_x, center_y + 100)
+
+            # 4. Ekrana Bas ve Döngüyü Atla
+            scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
+            screen.blit(scaled_surface, (0, 0))
+            pygame.display.update()
+        
+            continue  # Oyun henüz başlamadı, döngüye devam et
+
         # Eğer oyun sunucuda sıfırlandıysa (winner None olduysa), yerel değişkeni de sıfırla
         if game.winner is None and sent_rematch_request:
             sent_rematch_request = False # Yeni oyun başladı, isteği temizle
@@ -343,40 +373,60 @@ def online_game_loop(screen, network):
 
         # ... (Yem, Yılan, HUD çizimleri AYNEN KALSIN) ...
         for food in game.foods: UI.draw_apple(food[0], food[1])
+
+        for shield in game.shields: UI.draw_shield_item(shield[0], shield[1])
+
         # ...
         UI.draw_snake_with_eyes(game.snake1, UI.GREEN, game.p1_dir, game.p1_has_shield)
         UI.draw_snake_with_eyes(game.snake2, UI.RED, game.p2_dir, game.p2_has_shield)
-        UI.show_hud(game.score[0], game.score[1], game.remaining_time, game.current_speed, game.p1_has_shield, game.p2_has_shield)
+        UI.show_hud(game.score[0], game.score[1], game.remaining_time, game.current_speed, game.p1_has_shield, game.p2_has_shield, current_player_id=network.p)
 
         # --- 4. OYUN SONU EKRANI (OVERLAY) ---
-        # UI.winner_screen YERİNE bunu kullanıyoruz:
+
         if game.winner is not None:
             # Yarı şeffaf siyah perde
             overlay = pygame.Surface((LOGICAL_WIDTH, LOGICAL_HEIGHT))
-            overlay.set_alpha(180)
+            overlay.set_alpha(200)
             overlay.fill((0, 0, 0))
             virtual_surface.blit(overlay, (0, 0))
 
-            # Kazanan Yazısı
+            # Kazanan Yazısı (Ortada)
             if game.winner == 0: txt = "YEŞİL KAZANDI"; color = UI.GREEN
             elif game.winner == 1: txt = "KIRMIZI KAZANDI"; color = UI.RED
             else: txt = "BERABERE"; color = UI.WHITE
             
-            UI.draw_text(txt, UI.font_big, color, virtual_surface, LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2 - 100)
+            UI.draw_text(txt, UI.font_big, color, virtual_surface, LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2 - 150)
             
-            # --- TICK / CHECKMARK SİSTEMİ ---
-            # Yeşil Oyuncunun Durumu
+            # --- SKOR TABLOSU (SOL: YEŞİL | SAĞ: KIRMIZI) ---
+            
+            # SOL TARAF (YEŞİL)
+            p1_txt = f"YEŞİL: {game.score[0]}"
+            if network.p == 0: p1_txt += " (SEN)" # Ben Yeşilsem belirt
+            UI.draw_text(p1_txt, UI.font_ui, UI.GREEN, virtual_surface, LOGICAL_WIDTH//2 - 200, LOGICAL_HEIGHT//2 - 50)
+
+            # SAĞ TARAF (KIRMIZI)
+            p2_txt = f"KIRMIZI: {game.score[1]}"
+            if network.p == 1: p2_txt += " (SEN)" # Ben Kırmızıysam belirt
+            UI.draw_text(p2_txt, UI.font_ui, UI.RED, virtual_surface, LOGICAL_WIDTH//2 + 200, LOGICAL_HEIGHT//2 - 50)
+            
+            # Araya Çizgi
+            pygame.draw.line(virtual_surface, (100, 100, 100), (LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2 - 70), (LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2 - 30), 2)
+            
+            # --- DURUMLAR (HAZIR / BEKLİYOR) ---
+
+            # SOL TARAF (YEŞİL DURUMU)
             p1_status = "HAZIR" if game.p1_rematch else "BEKLİYOR..."
             p1_color = UI.GREEN if game.p1_rematch else (100, 100, 100)
-            UI.draw_text(f"YEŞİL: {p1_status}", UI.font_ui, p1_color, virtual_surface, LOGICAL_WIDTH//2 - 200, LOGICAL_HEIGHT//2 + 50)
+            UI.draw_text(f"DURUM: {p1_status}", UI.font_ui, p1_color, virtual_surface, LOGICAL_WIDTH//2 - 200, LOGICAL_HEIGHT//2 + 50)
             
-            # Kırmızı Oyuncunun Durumu
+            # SAĞ TARAF (KIRMIZI DURUMU)
             p2_status = "HAZIR" if game.p2_rematch else "BEKLİYOR..."
             p2_color = UI.RED if game.p2_rematch else (100, 100, 100)
-            UI.draw_text(f"KIRMIZI: {p2_status}", UI.font_ui, p2_color, virtual_surface, LOGICAL_WIDTH//2 + 200, LOGICAL_HEIGHT//2 + 50)
+            UI.draw_text(f"DURUM: {p2_status}", UI.font_ui, p2_color, virtual_surface, LOGICAL_WIDTH//2 + 200, LOGICAL_HEIGHT//2 + 50)
 
-            # Talimat
+            # Talimat (En Altta)
             UI.draw_text("Tekrar oynamak için [R] - Çıkış [ESC]", UI.font_ui, UI.WHITE, virtual_surface, LOGICAL_WIDTH//2, LOGICAL_HEIGHT//2 + 150)
+            # ----------------------------------------
 
         # --- 5. EKRANA BASMA ---
         scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())

@@ -6,7 +6,7 @@ import random
 LOGICAL_WIDTH = 1920
 LOGICAL_HEIGHT = 1080
 SNAKE_BLOCK = 25
-GAME_DURATION = 20
+GAME_DURATION = 10
 START_SPEED = 10
 SPEED_INCREASE_INTERVAL = 15
 SHIELD_DURATION = 5.0
@@ -25,7 +25,7 @@ class Game:
         start_x1 = 400 
         start_y1 = 500
         self.snake1 = []
-        self.len1 = 5 
+        self.len1 = 1 
         for i in range(self.len1):
             self.snake1.append([start_x1 + (i * SNAKE_BLOCK), start_y1])
             
@@ -33,7 +33,7 @@ class Game:
         start_x2 = 1500 
         start_y2 = 500
         self.snake2 = []
-        self.len2 = 5 
+        self.len2 = 1 
         for i in range(self.len2):
             self.snake2.append([start_x2 - (i * SNAKE_BLOCK), start_y2])
 
@@ -266,7 +266,7 @@ class Game:
             start_x1 = 400; start_y1 = 500
             
             self.snake1 = []
-            self.len1 = 5
+            self.len1 = 1
             for i in range(self.len1):
                 self.snake1.append([start_x1 + (i * SNAKE_BLOCK), start_y1])
 
@@ -274,7 +274,7 @@ class Game:
             start_x2 = 1500; start_y2 = 500
             
             self.snake2 = []
-            self.len2 = 5
+            self.len2 = 1
             for i in range(self.len2):
                 self.snake2.append([start_x2 - (i * SNAKE_BLOCK), start_y2])
             # -----------------------

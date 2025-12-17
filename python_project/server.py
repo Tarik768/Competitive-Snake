@@ -20,7 +20,7 @@ def server_game_loop():
             for game in active_games:
                 if game.ready:
                     game.update_game_state()
-            time.sleep(0.01) 
+            time.sleep(0.015) 
         except Exception as e:
             print(f"Server Loop Hatası: {e}")
 
