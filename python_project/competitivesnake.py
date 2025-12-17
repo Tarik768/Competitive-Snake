@@ -253,11 +253,13 @@ def gameLoop(screen):
         for shield in shields[:]:
             if abs(x1 - shield[0]) < 15 and abs(y1 - shield[1]) < 15:
                 p1_has_shield = True
-                p1_shield_end_time = current_time + SHIELD_DURATION
+                # SHIELD_DURATION saniye olduğu için 1000 ile çarpıp milisaniyeye çeviriyoruz
+                p1_shield_end_time = current_time + (SHIELD_DURATION * 1000) 
                 shields.remove(shield)
             elif abs(x2 - shield[0]) < 15 and abs(y2 - shield[1]) < 15:
                 p2_has_shield = True
-                p2_shield_end_time = current_time + SHIELD_DURATION
+                # SHIELD_DURATION saniye olduğu için 1000 ile çarpıp milisaniyeye çeviriyoruz
+                p2_shield_end_time = current_time + (SHIELD_DURATION * 1000)
                 shields.remove(shield)
 
         if len(foods) < 2:

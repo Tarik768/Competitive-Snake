@@ -15,7 +15,7 @@ class Game:
     def __init__(self, room_id):
         self.id = room_id
         # Thread kilidini oluştur (Veri çakışmasını önler)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         
         self.ready = False
         self.start_ticks = time.time()
@@ -79,7 +79,7 @@ class Game:
     def __setstate__(self, state):
         """Paket açılırken 'lock' nesnesini yeniden oluşturur."""
         self.__dict__.update(state)
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
     # --- OYUN MANTIĞI METOTLARI ---
     
@@ -260,22 +260,28 @@ class Game:
             self.remaining_time = GAME_DURATION
             self.current_speed = START_SPEED
             
-            # Yılanları başlangıç konumuna getir
-            start_x1 = 420; start_y1 = 510
+            # --- DÜZELTME BURADA ---
+            # Koordinatları 25'in katı yapıyoruz (Init fonksiyonundaki ile aynı)
+            # Eski hatalı değerler: start_x1 = 420; start_y1 = 510
+            start_x1 = 400; start_y1 = 500
+            
             self.snake1 = []
             self.len1 = 5
             for i in range(self.len1):
                 self.snake1.append([start_x1 + (i * SNAKE_BLOCK), start_y1])
 
-            start_x2 = 1500; start_y2 = 510
+            # Eski hatalı değerler: start_x2 = 1500; start_y2 = 510
+            start_x2 = 1500; start_y2 = 500
+            
             self.snake2 = []
             self.len2 = 5
             for i in range(self.len2):
                 self.snake2.append([start_x2 - (i * SNAKE_BLOCK), start_y2])
+            # -----------------------
 
             self.score = [self.len1, self.len2]
-            self.p1_dir = "RIGHT"
-            self.p2_dir = "LEFT"
+            self.p1_dir = "RIGHT" # P1 Yönünü de resetleyelim
+            self.p2_dir = "LEFT"  # P2 Yönünü de resetleyelim
             
             self.foods = []
             self.shields = []

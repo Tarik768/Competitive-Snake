@@ -36,12 +36,14 @@ def handle_client(conn, p_id, game_id):
                 if not data: break
                 
                 if data == "REMATCH":
+                    print(f"Oyuncu {p_id} yeniden oynamak istiyor.") # <-- BU SATIRI EKLE
                     with game.lock:
                         if p_id == 0: game.p1_rematch = True
                         else: game.p2_rematch = True
                         
                         # İkisi de hazırsa oyunu sıfırla!
                         if game.p1_rematch and game.p2_rematch:
+                            print(f"Oda {game_id} sıfırlanıyor...") # <-- BU SATIRI EKLE
                             game.reset_game()
 
                 elif data != "get":
