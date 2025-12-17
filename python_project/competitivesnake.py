@@ -19,7 +19,7 @@ else:
 
 # --- OYUN AYARLARI ---
 START_SPEED = 10
-GAME_DURATION = 360
+GAME_DURATION = 10
 SPEED_INCREASE_INTERVAL = 5
 SHIELD_DURATION = 5000
 
@@ -74,6 +74,25 @@ def gameLoop(screen):
     # --- UI BAŞLATMA ---
     UI.init_ui(screen, DIS_WIDTH, DIS_HEIGHT)
     
+    try:
+        shield_sfx = pygame.mixer.Sound("sounds/shield.wav")
+        end_sfx = pygame.mixer.Sound("sounds/endsound.wav")
+        hit_sfx = pygame.mixer.Sound("sounds/hit.wav")
+        eat_sfx = pygame.mixer.Sound("sounds/eat.wav") # <--- YENİ: YEM SESİ
+        
+        # --- SES SEVİYESİ AYARLARI ---
+        shield_sfx.set_volume(1.0)
+        end_sfx.set_volume(1.0)
+        hit_sfx.set_volume(1.0)
+        eat_sfx.set_volume(0.5)
+        
+    except:
+        shield_sfx = None
+        end_sfx = None
+        hit_sfx = None
+        eat_sfx = None # <--- YENİ
+        print("Ses dosyaları eksik.")
+
     game_over = False
     start_ticks = pygame.time.get_ticks()
     
@@ -130,6 +149,7 @@ def gameLoop(screen):
 
             # --- OYUN SONU KONTROLÜ ---
             if remaining_time <= 0:
+                if end_sfx: end_sfx.play()
                 if length_of_snake1 > length_of_snake2:
                     result = UI.winner_screen("YESIL YILAN", UI.GREEN, length_of_snake1, length_of_snake2, gameLoop)
                 elif length_of_snake2 > length_of_snake1:
@@ -244,6 +264,9 @@ def gameLoop(screen):
         if p2_has_shield and current_time > p2_shield_end_time:
             p2_has_shield = False
 
+        len1_before = length_of_snake1
+        len2_before = length_of_snake2
+
         # Çarpışma
         if not p2_has_shield:
             snake2_list, length_of_snake2 = handle_cut_robust(snake2_list, x1, y1, foods)
@@ -252,6 +275,9 @@ def gameLoop(screen):
         
         snake1_list, length_of_snake1 = handle_cut_robust(snake1_list, x1, y1, foods)
         snake2_list, length_of_snake2 = handle_cut_robust(snake2_list, x2, y2, foods)
+
+        if (len1_before != length_of_snake1 or len2_before != length_of_snake2) and hit_sfx:
+            hit_sfx.play()
 
         # Çizimler
         UI.draw_snake_with_eyes(snake1_list, UI.GREEN, p1_dir, p1_has_shield)
@@ -262,12 +288,14 @@ def gameLoop(screen):
         # Yem Yeme
         for food in foods[:]:
             if abs(x1 - food[0]) < 15 and abs(y1 - food[1]) < 15:
+                if eat_sfx: eat_sfx.play()
                 length_of_snake1 += 1
                 foods.remove(food)
                 new_item = create_random_item(snake1_list, snake2_list, shields + foods)
                 if new_item: foods.append(new_item)
 
             elif abs(x2 - food[0]) < 15 and abs(y2 - food[1]) < 15:
+                if eat_sfx: eat_sfx.play()
                 length_of_snake2 += 1
                 foods.remove(food)
                 new_item = create_random_item(snake1_list, snake2_list, shields + foods)
@@ -276,10 +304,12 @@ def gameLoop(screen):
         # Kalkan Alma
         for shield in shields[:]:
             if abs(x1 - shield[0]) < 15 and abs(y1 - shield[1]) < 15:
+                if shield_sfx: shield_sfx.play()
                 p1_has_shield = True
                 p1_shield_end_time = current_time + SHIELD_DURATION
                 shields.remove(shield)
             elif abs(x2 - shield[0]) < 15 and abs(y2 - shield[1]) < 15:
+                if shield_sfx: shield_sfx.play()
                 p2_has_shield = True
                 p2_shield_end_time = current_time + SHIELD_DURATION
                 shields.remove(shield)
