@@ -4,6 +4,8 @@ import os
 import competitivesnake # Oyun dosyası
 from network import Network
 
+from common import Game
+
 pygame.init()
 
 # --- SABİT MANTIKSAL ÇÖZÜNÜRLÜK (HER ŞEY BUNA GÖRE KONUMLANACAK) ---
@@ -253,12 +255,10 @@ def online_menu():
             if event.type == pygame.KEYDOWN:
                 if active:
                     if event.key == pygame.K_RETURN:
-                        # Enter'a basınca Odaya Katılmayı tetikleyebiliriz (Opsiyonel)
                         pass 
                     elif event.key == pygame.K_BACKSPACE:
                         user_text = user_text[:-1]
                     else:
-                        # Sadece sayı girilmesine izin verelim (Oda ID'si için)
                         if event.unicode.isnumeric() and len(user_text) < 5:
                             user_text += event.unicode
                 
@@ -270,7 +270,7 @@ def online_menu():
         # Başlık
         draw_text('ONLINE LOBİ', fontbig, (255, 215, 0), virtual_surface, center_x, 80)
         
-        # Durum Mesajı (Hata vs.)
+        # Durum Mesajı
         if status_msg != "":
             draw_text(status_msg, font, status_color, virtual_surface, center_x, 140)
 
@@ -282,10 +282,9 @@ def online_menu():
         
         # Metni çiz
         text_surface = font.render(user_text, True, WHITE)
-        # Metni kutunun ortasına hizala
         virtual_surface.blit(text_surface, (input_rect.x + 10, input_rect.y + 10))
 
-        # İmleç (Cursor)
+        # İmleç
         if active and cursor_visible:
             txt_width = text_surface.get_width()
             cursor_x = input_rect.x + 10 + txt_width
@@ -302,25 +301,17 @@ def online_menu():
             if click:
                 status_msg = "Sunucuya bağlanılıyor..."
                 status_color = WHITE
-                # Ekranı anlık güncelle ki kullanıcı beklediğini görsün
                 scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
                 screen.blit(scaled_surface, (0, 0))
                 pygame.display.update()
 
-                # --- NETWORK BAŞLAT (HOST) ---
                 try:
                     n = Network("MAKE")
                     if n.p is not None:
-                        # Bağlantı başarılı! Oyunu başlat
-                        # BURASI HENÜZ YAZILMADI: competitivesnake.online_game_loop(n, screen)
                         print(f"Oda kuruldu: {n.game_id}")
                         status_msg = f"Oda ID: {n.game_id} - Bekleniyor..."
                         status_color = GREEN_HOVER
-                        
-                        # GEÇİCİ OLARAK: Oyuna giriş kodunu buraya bağlayacağız
-                        # Şimdilik hata vermesin diye pass geçiyoruz
                         competitivesnake.online_game_loop(screen, n)
-                        
                     else:
                         status_msg = "Sunucuya bağlanılamadı!"
                         status_color = (255, 50, 50)
@@ -346,17 +337,14 @@ def online_menu():
                 else:
                     status_msg = f"Odaya giriliyor: {user_text}..."
                     status_color = WHITE
-                    # Ekranı güncelle
                     scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
                     screen.blit(scaled_surface, (0, 0))
                     pygame.display.update()
 
-                    # --- NETWORK BAŞLAT (JOIN) ---
                     try:
                         n = Network("JOIN", room_id=user_text)
                         if n.p is not None:
                             print(f"Odaya girildi!")
-                            # GEÇİCİ OLARAK:
                             competitivesnake.online_game_loop(screen, n)
                         else:
                             status_msg = "Oda bulunamadı veya dolu!"
@@ -381,7 +369,6 @@ def online_menu():
         
         draw_text("GERİ", font, WHITE, virtual_surface, back_rect.centerx, back_rect.centery)
 
-        # --- SONRENDER (Scale & Blit) ---
         scaled_surface = pygame.transform.smoothscale(virtual_surface, screen.get_size())
         screen.blit(scaled_surface, (0, 0))
         pygame.display.update()
@@ -417,7 +404,6 @@ def settings_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     click = True
-                    # Slider kontrolü sanal koordinatlarla
                     slider_rect = pygame.Rect(center_x - slider_width // 2, center_y + 80, slider_width, 30)
                     if slider_rect.collidepoint((mx, my)):
                         dragging_slider = True
@@ -477,7 +463,6 @@ def settings_menu():
         handle_x = (center_x - slider_width // 2) + fill_width
         pygame.draw.circle(virtual_surface, WHITE, (handle_x, center_y + 93), 10)
 
-        # Geri
         back_rect = pygame.Rect(center_x - 100, SCREEN_HEIGHT - 100, 200, 60)
         if back_rect.collidepoint((mx, my)):
             pygame.draw.rect(virtual_surface, GREEN_HOVER, back_rect, border_radius=15)

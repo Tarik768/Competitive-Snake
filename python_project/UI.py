@@ -1,8 +1,7 @@
 import pygame
-
+from common import SNAKE_BLOCK
 # --- SABİTLER VE AYARLAR ---
 # Bu değerleri buradan değiştirdiğinde her yerde değişecek
-SNAKE_BLOCK = 25
 SCREEN_WIDTH = 0  # init() fonksiyonunda set edilecek
 SCREEN_HEIGHT = 0 # init() fonksiyonunda set edilecek
 
@@ -219,3 +218,9 @@ def winner_screen(winner_name, winner_color, p1_score, p2_score, game_loop_callb
                 if event.key == pygame.K_r:
                     waiting = False
                     return "RESTART"    # Yeniden başla
+                
+def draw_text(text, font, color, surface, x, y):
+    textobj = font.render(text, True, color)
+    textrect = textobj.get_rect()
+    textrect.center = (x, y)
+    surface.blit(textobj, textrect)
