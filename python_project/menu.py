@@ -4,6 +4,15 @@ import os
 import competitivesnake # Senin kaydettiğin oyun dosyası (aynı klasörde olmalı)
 
 pygame.init()
+pygame.mixer.init() # Ses motorunu başlat
+
+# --- SES YÜKLEME ---
+try:
+    click_sfx = pygame.mixer.Sound("sounds/click.wav")
+except:
+    click_sfx = None
+    print("Click sesi bulunamadı.")
+
 
 # --- EKRAN AYARLARI ---
 infoObject = pygame.display.Info()
@@ -94,6 +103,7 @@ def main_menu():
         if btn1_rect.collidepoint((mx, my)):
             pygame.draw.rect(screen, GREEN_HOVER, btn1_rect, border_radius=15)
             if click:
+                if click_sfx: click_sfx.play()
                 try:
                     competitivesnake.gameLoop(screen)
                     pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
@@ -106,6 +116,7 @@ def main_menu():
         if btn2_rect.collidepoint((mx, my)):
             pygame.draw.rect(screen, (0, 150, 200), btn2_rect, border_radius=15) # Buna Mavi ton verdik
             if click:
+                if click_sfx: click_sfx.play() 
                 controls_menu() # Yeni sayfaya git
         else:
             pygame.draw.rect(screen, (0, 100, 150), btn2_rect, border_radius=15)
@@ -185,6 +196,7 @@ def controls_menu(): # Kontrollerin gösterildiği ekran
         if back_btn_rect.collidepoint((mx, my)):
             pygame.draw.rect(screen, GREEN_HOVER, back_btn_rect, border_radius=15)
             if click:
+                if click_sfx: click_sfx.play()
                 return # Ana menüye dön
         else:
             pygame.draw.rect(screen, GREEN_BUTTON, back_btn_rect, border_radius=15)
