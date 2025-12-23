@@ -19,7 +19,7 @@ else:
 
 # --- OYUN AYARLARI ---
 START_SPEED = 10
-GAME_DURATION = 10
+GAME_DURATION = 30
 SPEED_INCREASE_INTERVAL = 5
 SHIELD_DURATION = 5000
 
@@ -71,16 +71,14 @@ def handle_cut_robust(victim_list, hit_point_x, hit_point_y, food_list):
     return victim_list, len(victim_list)
 
 def gameLoop(screen):
-    # --- UI BAŞLATMA ---
     UI.init_ui(screen, DIS_WIDTH, DIS_HEIGHT)
-    
+    # Ses dosyalarının importu
     try:
         shield_sfx = pygame.mixer.Sound("sounds/shield.wav")
         end_sfx = pygame.mixer.Sound("sounds/endsound.wav")
         hit_sfx = pygame.mixer.Sound("sounds/hit.wav")
-        eat_sfx = pygame.mixer.Sound("sounds/eat.wav") # <--- YENİ: YEM SESİ
+        eat_sfx = pygame.mixer.Sound("sounds/eat.wav") 
         
-        # --- SES SEVİYESİ AYARLARI ---
         shield_sfx.set_volume(1.0)
         end_sfx.set_volume(1.0)
         hit_sfx.set_volume(1.0)
@@ -90,15 +88,15 @@ def gameLoop(screen):
         shield_sfx = None
         end_sfx = None
         hit_sfx = None
-        eat_sfx = None # <--- YENİ
+        eat_sfx = None 
         print("Ses dosyaları eksik.")
 
+    # Genel oyun parametreleri ve başlangıç parametrelerinin tanımlanması
     game_over = False
     start_ticks = pygame.time.get_ticks()
     
     block = UI.SNAKE_BLOCK 
 
-    # --- BAŞLANGIÇ KONUMLARI ---
     start_x1 = round((DIS_WIDTH / 4 * 3) / block) * block
     start_y1 = round((DIS_HEIGHT / 2) / block) * block
     
@@ -119,7 +117,6 @@ def gameLoop(screen):
     snake2_list = []
     length_of_snake2 = 5
 
-    # --- KALKAN DEĞİŞKENLERİ ---
     p1_has_shield = False
     p1_shield_end_time = 0
     p2_has_shield = False
@@ -135,19 +132,17 @@ def gameLoop(screen):
         if new_food:
             foods.append(new_food)
 
+
+    # Oyun döngüsü
     while not game_over:
         current_time = pygame.time.get_ticks()
         
-        # Süreyi hesaplarken pause süresini hesaba katmak için:
-        # Eğer pause durumundaysak zamanı dondurmuş gibi davranıyoruz.
-        # Ancak basitlik için burayı ellemiyoruz, sadece 'continue' ekleyeceğiz.
         
         if not paused:
             seconds_passed = (current_time - start_ticks) / 1000
             remaining_time = GAME_DURATION - seconds_passed
             current_speed = START_SPEED + (int(seconds_passed) // SPEED_INCREASE_INTERVAL)
 
-            # --- OYUN SONU KONTROLÜ ---
             if remaining_time <= 0:
                 if end_sfx: end_sfx.play()
                 if length_of_snake1 > length_of_snake2:
@@ -162,7 +157,7 @@ def gameLoop(screen):
                     gameLoop(screen)
                     return
 
-        # --- EVENT HANDLING ---
+        # Klavye olayları
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_over = True
@@ -174,7 +169,7 @@ def gameLoop(screen):
                     return 
                 
                 if not paused:
-                    if event.key == pygame.K_p: # DURAKLAT
+                    if event.key == pygame.K_p:
                         paused = True
                         pause_start_time = pygame.time.get_ticks()
                     
@@ -189,30 +184,29 @@ def gameLoop(screen):
                     elif event.key == pygame.K_w and p2_dir != "DOWN": p2_next_dir = "UP"
                     elif event.key == pygame.K_s and p2_dir != "UP": p2_next_dir = "DOWN"
 
-                else: # PAUSE DURUMUNDA TUŞLAR
-                    if event.key == pygame.K_c: # DEVAM ET
+                else:
+                    if event.key == pygame.K_c:
                         paused = False
                         pause_duration = pygame.time.get_ticks() - pause_start_time
                         start_ticks += pause_duration
                     
-                    elif event.key == pygame.K_r: # YENİDEN BAŞLAT
+                    elif event.key == pygame.K_r:
                         gameLoop(screen)
                         return
         
         if paused:
             UI.draw_pause_screen()
             pygame.display.update()
-            clock.tick(15) # İşlemciyi yormamak için FPS düşür
-            continue # Döngünün başına dön, HAREKET KODLARINI ÇALIŞTIRMA
+            clock.tick(15) # İşlemciyi yormamak için tick düşür
+            continue
         
-        # --- HAREKET ---
-        # P1 (Yeşil)
+        # P1
         if p1_next_dir == "LEFT": x1_change = -block; y1_change = 0; p1_dir = "LEFT"
         elif p1_next_dir == "RIGHT": x1_change = block; y1_change = 0; p1_dir = "RIGHT"
         elif p1_next_dir == "UP": y1_change = -block; x1_change = 0; p1_dir = "UP"
         elif p1_next_dir == "DOWN": y1_change = block; x1_change = 0; p1_dir = "DOWN"
         
-        # P2 (Kırmızı)
+        # P2
         if p2_next_dir == "LEFT": x2_change = -block; y2_change = 0; p2_dir = "LEFT"
         elif p2_next_dir == "RIGHT": x2_change = block; y2_change = 0; p2_dir = "RIGHT"
         elif p2_next_dir == "UP": y2_change = -block; x2_change = 0; p2_dir = "UP"
@@ -232,7 +226,6 @@ def gameLoop(screen):
         if y2 >= DIS_HEIGHT: y2 = 50
         elif y2 < 50: y2 = (DIS_HEIGHT // block) * block - block
 
-        # UI Modülü Üzerinden Çizim İşlemleri
         screen.fill(UI.BG_COLOR)
         UI.draw_grid()
 
@@ -249,7 +242,7 @@ def gameLoop(screen):
         for shield in shields:
             UI.draw_shield_item(shield[0], shield[1])
 
-        # Vücut Güncelleme
+        # Snake update
         snake1_head = [x1, y1]
         snake1_list.append(snake1_head)
         if len(snake1_list) > length_of_snake1: del snake1_list[0]
